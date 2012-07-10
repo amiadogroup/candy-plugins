@@ -69,9 +69,23 @@ CandyShop.GameAPI = (function(self, Candy, $) {
 	self.apiCall = function(roomJid, data) {
 		if(typeof this.games[roomJid] != 'undefined') {
 			this.games[roomJid].apiCall(data);
-		} else {
-			// Not implemented for now....
-			console.log('Should do an Invite now...');
+		} else if(typeof data.command != 'undefined' && data.command == 'invite' && typeof data.game != 'undefined') {
+			if(typeof CandyShop.GameAPI[data.game] != 'undefined') {
+				this.invite(roomJid, data.game);
+			}
+		}
+	};
+	
+	/** Function: invite
+	 * Invite me to a game
+	 * 
+	 * Parameters:
+	 *   (String) roomJid
+	 *   (String) game
+	 */
+	self.invite = function(roomJid, game) {
+		if(true) { /* Do Invitation here, at the momment it auto-accepts */
+			this.games[roomJid] =  CandyShop.GameAPI[game].createGame();
 		}
 	};
 	
