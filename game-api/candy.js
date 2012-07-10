@@ -1,4 +1,4 @@
-/** File: game-api.js
+/** File: candy.js
  * Candy Game API
  * 
  * Authors:
