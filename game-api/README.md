@@ -2,7 +2,7 @@
 An API to write Games in Candy.
 
 ## Usage
-Include the JavaScript and CSS files:
+Include the JavaScript file:
 
 ```HTML
 <script type="text/javascript" src="candyshop/game-api/candy.js"></script>
