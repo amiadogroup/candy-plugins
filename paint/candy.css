@@ -5,3 +5,19 @@
 .candy_painting_hidden {
 	display: none;
 }
+.message-form input.paint {
+	right: 75px;
+}
+#paint-control {
+	background: no-repeat url('paint-control.png');
+	position: relative;
+}
+#context-menu .paint {
+	padding-left: 5px;
+}
+#context-menu .paint canvas {
+	width: 320px;
+	height: 160px;
+	background-color: #FFFFFF;
+	display: block;
+}

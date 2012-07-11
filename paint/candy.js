@@ -10,6 +10,9 @@
 
 var CandyShop = (function(self) { return self; }(CandyShop || {}));
 
+/** Class: CandyShop.Paint
+ * Paint Plugin Class
+ */
 CandyShop.Paint = (function(self, Candy, $) {
 	/** Object: about
 	 * About Game API
@@ -59,6 +62,108 @@ CandyShop.Paint = (function(self, Candy, $) {
 				}
 			});
 		};
+		var html = '<li id="paint-control" data-tooltip="' + $.i18n._('candyshopPaintDoPaint') + '"><span class="paint" id="paint-control-indicator"></span></li>';
+		$('#emoticons-icon').after(html);
+		$('#paint-control').click(function(event) {
+			CandyShop.Paint.showPainter(this);
+		});
+	};
+	
+	self.showPainter = function(elem) {
+		elem = $(elem);
+		var pos = elem.offset(),
+			menu = $('#context-menu'),
+			content = $('ul', menu),
+			canvas = '<canvas width="320" height="160" />',
+			send = '<input id="paint-send" type="button" value="' + $.i18n._('send') + '" />',
+			cancel = '<input id="paint-cancel" type="button" value="' + $.i18n._('cancel') + '" />',
+			color = '<select id="paint-color"><option value="#000000">Schwarz</option><option value="#FF0000">Rot</option><option value="#00FF00">Grün</option><option value="#0000FF">Blau</option></select>',
+			width = '<select id="paint-width"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select>', 
+			paint = '';
+
+		$('#tooltip').hide();
+		
+		paint = canvas + send + cancel + color + width;
+
+		content.html('<li class="paint">' + paint + '</li>');
+		self.PaintArea.init(content.find('canvas'));
+		
+		$('#paint-send').click(function(event) {
+			Candy.Core.Action.Jabber.Room.Message(
+				Candy.View.getCurrent().roomJid,
+				'paint:' + CandyShop.Paint.PaintArea.getData(),
+				'groupchat'
+			);
+		});
+
+		var posLeft = Candy.Util.getPosLeftAccordingToWindowBounds(menu, pos.left),
+			posTop  = Candy.Util.getPosTopAccordingToWindowBounds(menu, pos.top);
+
+		menu.css({'left': posLeft.px, 'top': posTop.px, backgroundPosition: posLeft.backgroundPositionAlignment + ' ' + posTop.backgroundPositionAlignment});
+		menu.fadeIn('fast');
+
+		return true;
+	};
+	
+
+	self.PaintArea = {
+		started : false,
+		context : false,
+		strokes : new Array(),
+
+		init : function(canvas) {
+			if (!canvas.get(0).getContext) {
+				alert('Error: no canvas.getContext!');
+				return;
+			}
+
+			// Get the 2D canvas context.
+			this.context = canvas.get(0).getContext('2d');
+			if (!this.context) {
+				alert('Error: failed to getContext!');
+				return;
+			}
+
+			// Attach the mousemove event handler.
+			canvas.bind('mousedown', function(event) {
+				CandyShop.Paint.PaintArea.context.beginPath();
+				CandyShop.Paint.PaintArea.context.strokeStyle = $('#paint-color').val();
+				CandyShop.Paint.PaintArea.context.lineWidth = $('#paint-width').val();
+				CandyShop.Paint.PaintArea.context.moveTo(event.offsetX, event.offsetY);
+				CandyShop.Paint.PaintArea.started = true;
+				CandyShop.Paint.PaintArea.strokes.push({
+					color : $('#paint-color').val(),
+					width : $('#paint-width').val(),
+					points: new Array()
+				});
+				CandyShop.Paint.PaintArea.strokes[CandyShop.Paint.PaintArea.strokes.length - 1].points.push({
+					x : event.offsetX,
+					y : event.offsetY
+				});
+			});
+			canvas.bind('mousemove', function(event) {
+				if (CandyShop.Paint.PaintArea.started) {
+					CandyShop.Paint.PaintArea.strokes[CandyShop.Paint.PaintArea.strokes.length - 1].points.push({
+						x : event.offsetX,
+						y : event.offsetY
+					});
+					CandyShop.Paint.PaintArea.context.lineTo(event.offsetX, event.offsetY);
+					CandyShop.Paint.PaintArea.context.stroke();
+				}
+			});
+			canvas.bind('mouseout', function(event) {
+				CandyShop.Paint.PaintArea.context.closePath();
+				CandyShop.Paint.PaintArea.started = false;
+			});
+			canvas.bind('mouseup', function(event) {
+				CandyShop.Paint.PaintArea.context.closePath();
+				CandyShop.Paint.PaintArea.started = false;
+			});
+		},
+		
+		getData: function() {
+			return JSON.stringify({strokes: this.strokes});
+		}
 	};
 	
 	/** Function: preparePainting
@@ -98,7 +203,7 @@ CandyShop.Paint = (function(self, Candy, $) {
 			
 			context.beginPath();
 			context.strokeStyle = stroke.color;
-			context.lineWidth = stroke.strength;
+			context.lineWidth = stroke.width;
 			context.moveTo(stroke.points[0].x, stroke.points[0].y);
 			
 			for(j in stroke.points) {
