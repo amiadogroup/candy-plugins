@@ -44,24 +44,25 @@ CandyShop.Paint = (function(self, Candy, $) {
 	 */
 	self.init = function(){
 		/* Init Message Observers */
-		Candy.View.Event.Message.beforeShow = function(args) {
+		$(Candy.View.Pane).bind('candy:view.message.beforeShow', function(e, args) {
 			if(args.message.substring(0, 6) == 'paint:') {
 				try {
-					return CandyShop.Paint.preparePainting($.parseJSON(args.message.substring(6)));
+					args.message = CandyShop.Paint.preparePainting($.parseJSON(args.message.substring(6)));
 				} catch(e) {
-					return null;
-				}
+					args.message = '';
+				}	
 			} else {
 				return args.message;
 			}
-		};
-		Candy.View.Event.Message.onShow = function(args) {
+		});
+		$(Candy.View.Pane).bind('candy:view.message.afterShow', function(e, args) {
 			$('.candy_painting_hidden').each(function(index, canvas) {
 				if(typeof CandyShop.Paint.paintings[canvas.id] != 'undefined') {
 					CandyShop.Paint.drawPainting(canvas);
 				}
 			});
-		};
+		});
+
 		var html = '<li id="paint-control" data-tooltip="' + $.i18n._('candyshopPaintDoPaint') + '"><span class="paint" id="paint-control-indicator"></span></li>';
 		$('#emoticons-icon').after(html);
 		$('#paint-control').click(function(event) {
