@@ -1,9 +1,6 @@
 # Candy Plugins (Development)
 
 ## List of available plugins
-### [Candy](http://candy-chat.github.com/candy)
-* __jQuery-Ui__ - jQuery UI lightness theme
-
 ### [Amiado Group](http://www.amiadogroup.com)
 * __game-api__ - An API for Candy Games.
 * __game-pictionary__ - The Beginning of a game.
