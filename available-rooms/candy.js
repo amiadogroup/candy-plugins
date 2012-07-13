@@ -40,7 +40,7 @@ CandyShop.AvailableRooms = (function(self, Candy, $) {
 			if($('#add-room').length > 0) {
 				$('#add-room').parent().remove();
 			}
-			$('#chat-tabs').children().last().after('<li class="roomtype-groupchat"><a id="add-room" href="javascript:;" class="label" style="padding-right: 10px;">+</a></li>');
+			$('#chat-tabs').children().last().after('<li class="roomtype-add"><a id="add-room" href="javascript:;" class="label" style="padding-right: 10px;">+</a></li>');
 			$('#add-room').click(function(e) {
 				self.showRooms();
 			});
@@ -51,8 +51,8 @@ CandyShop.AvailableRooms = (function(self, Candy, $) {
 	 * Show all public rooms
 	 */
 	self.showRooms = function() {
-		Candy.Core.getConnection().muc.listRooms('conference.chat.amiadogroup.com', function(roomsData) {
-			var rooms = {};
+		Candy.Core.getConnection().muc.listRooms('conference.' + Candy.Core.getConnection().domain, function(roomsData) {
+			var rooms = new Array();
 			$.each($(roomsData).find('item'), function(item, room) {
 				var allreadyIn = false;
 				$.each(Candy.Core.getRooms(), function(item, roomSearch) {
@@ -62,11 +62,19 @@ CandyShop.AvailableRooms = (function(self, Candy, $) {
 					}
 				});
 				if(!allreadyIn) {
-					rooms[$(room).attr('jid')] = {
+					rooms.push({
 							jid: $(room).attr('jid'),
 							name: $(room).attr('name').substr(0, $(room).attr('name').indexOf('(') - 1),
 							people: $(room).attr('name').substr($(room).attr('name').indexOf('(') + 1, $(room).attr('name').length - $(room).attr('name').indexOf('(') - 2)
-					};
+					});
+				}
+			});
+			
+			rooms = rooms.sort(function(a, b) {
+				if(a.people == b.people) {
+					return a.name < b.name ? -1 : 1;
+				} else {
+					return a.people < b.people ? 1 : -1;
 				}
 			});
 			
@@ -77,8 +85,7 @@ CandyShop.AvailableRooms = (function(self, Candy, $) {
 			elem.blur();
 
 			// get the necessary items
-			var pos = elem.offset(),
-				menu = $('#context-menu'),
+			var menu = $('#context-menu'),
 				content = $('ul', menu);
 
 			// clear the content if needed
@@ -90,14 +97,12 @@ CandyShop.AvailableRooms = (function(self, Candy, $) {
 			}
 			
 			content.find('li').click(self.joinChanel);
-
-			// estimate the left to the # of chars * 7...not sure?
-			// get the top of the box to put this thing at
-			var posLeft = elem.val().length * 7,
-				posTop  = Candy.Util.getPosTopAccordingToWindowBounds(menu, pos.top);
-
-			// show it
-			menu.css({'left': posLeft, 'top': posTop.px, backgroundPosition: posLeft.backgroundPositionAlignment + ' ' + posTop.backgroundPositionAlignment, 'backgroundPosition': 'right top', 'marginTop': '15px'});
+			
+			var pos = elem.offset(),
+				posLeft = Candy.Util.getPosLeftAccordingToWindowBounds(menu, pos.left + 7),
+				posTop = Candy.Util.getPosTopAccordingToWindowBounds(menu, pos.top);
+			
+			menu.css({'left': posLeft.px, 'top': '7px', backgroundPosition: posLeft.backgroundPositionAlignment + ' ' + posTop.backgroundPositionAlignment});
 			menu.fadeIn('fast');
 		});
 	};
