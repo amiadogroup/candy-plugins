@@ -46,8 +46,14 @@ CandyShop.Colors = (function(self, Candy, $) {
 
 		// Updated to new jQuery event model
 		$(Candy.View.Pane).bind('candy:view.message.beforeShow', function(e, args) {
-			// apply the color before it's shown
-			args.message = args.message.replace(/^\|c:([0-9]{1,2})\|(.*)/gm, '<span class="colored color-$1">$2</span>');
+			if(args.message.match(/^\|c:([0-9]{1,2})\|(.*)/gm)) {
+				// apply the color before it's shown
+				var tagBefore =  args.message.replace(/^\|c:([0-9]{1,2})\|(.*)/gm, '<span class="colored color-$1">');
+				var tagAfter = '</span>';
+				args.message = args.message.replace(/^\|c:([0-9]{1,2})\|(.*)/gm, '$2');
+				$(Candy.View.Pane).triggerHandler('candy:view.message.beforeShow', args);
+				args.message = tagBefore + args.message + tagAfter;
+			}
 		});
 
 		// if we have the cookie
