@@ -1,85 +1,83 @@
-/*
- * inline-images
- * @version 1.0
- * @author Manuel Alabor (manuel@alabor.me)
+/** File: candy.js
+ * Candy - Chats are not dead yet.
  *
+ * Authors
+ *   - Manuel Alabor (manuel@alabor.me)
+ */
+var CandyShop = (function(self) { return self; }(CandyShop || {}));
+
+/** Class: InlineImages
  * If a user posts a URL to an image, that image gets rendered directly
  * inside of Candy.
  */
-
-var CandyShop = (function(self) { return self; }(CandyShop || {}));
-
 CandyShop.InlineImages = (function(self, Candy, $) {
-	
-	var _fileExtensions = ['png','jpg','jpeg','gif']
-		,_originalLinkify = Candy.Util.Parser.linkify
-		,_maxImageSize = 100;
-	
+	/** Object: _options
+	 * Options:
+	 *   (Array) fileExtensions - The file extensions to replace with an <img /> tag
+	 *   (Integer) maxImageSize - The max image size (height and width) of the shown image
+	 */
+	var _options = {
+		fileExtensions: ['png','jpg','jpeg','gif'],
+		maxImageSize: 100
+	};
+
 	/** Function: init
 	 * Initializes the inline-images plugin with the default settings.
-	 */
-	self.init = function() {
-		Candy.View.Event.Message.beforeShow = handleBeforeShow;
-		Candy.View.Event.Message.onShow = handleOnShow;
-		Candy.Util.Parser.linkify = linkify;
-	};
-	
-	/** Function: initWithFileExtensions
-	 * Initializes the inline-images plugin with the possibility to pass an
-	 * array with all the file extensions you want to display as image.
 	 *
 	 * Parameters:
-	 *   (String array) fileExtensions - Array with extensions (jpg, png, ...)
+	 *   (Object) options - An options packet to apply to this plugin
 	 */
-	self.initWithFileExtensions = function(fileExtensions) {
-		_fileExtensions = fileExtensions;
-		init();
+	self.init = function(options) {
+		// apply passed in options to this plugin
+		$.extend(true, _options, options);
+
+		// add a listener to these events
+		$(Candy.View.Pane).on('candy:view.message.beforeShow', self.handleBeforeShow);
+		$(Candy.View.Pane).on('candy:view.message.afterShow', self.handleAfterShow);
 	};
-	
-	/** Function: initWithMaxImageSize
-	 * Initializes the inline-images plugin with the possibility to pass the
-	 * maximum image size for displayed images.
+
+	/** Function: buildImageLoaderSource
+	 * Returns a loader indicator. The handleOnShow method fullfills afterwards
+	 * the effective image loading.
 	 *
 	 * Parameters:
-	 *   (int) maxImageSize - Maximum edge size for images
+	 *   (String) url - image url
+	 *
+	 * Returns:
+	 *   (String)
 	 */
-	self.initWithMaxImageSize = function(maxImageSize) {
-		_maxImageSize = maxImageSize;
-		init();
+	self.buildImageLoaderSource = function(url) {
+		url = url.replace(/^\>/, '').replace(/\<$/, '');
+		return '<img class="inlineimages-loader" longdesc="' + url + '" src="candy-plugins/inline-images/spinner.gif" />'
 	};
-	
-	/** Function: initWithFileExtensionsAndMaxImageSize
-	 * Initializes the inline-images plugin with the possibility to pass an
-	 * array with all the file extensions you want to display as image and
-	 * the maximum image size for displayed images.
+
+	/** Function: buildImageSource
+	 * Returns HTML source to show a URL as an image.
 	 *
 	 * Parameters:
-	 *   (String array) fileExtensions - Array with extensions (jpg, png, ...)
-	 *   (int) maxImageSize - Maximum edge size for images
+	 *   (String) url - image url
+	 *
+	 * Returns:
+	 *   (String)
 	 */
-	self.initWithFileExtensionsAndMaxImageSize = function(fileExtensions, maxImageSize) {
-		_fileExtensions = fileExtensions;
-		_maxImageSize = maxImageSize;
-		init();
+	self.buildImageSource = function(url, width, height) {
+		return '<img src="' + url + '" width="' + width + '" height="' + height + '" />';
 	};
-	
-	
+
 	/** Function: handleBeforeShow
 	 * Handles the beforeShow event of a message.
 	 *
-	 * Paramteres:
+	 * Parameters:
 	 *   (String) message - the message to process
 	 *
 	 * Returns:
 	 *   (String)
 	 */
-	var handleBeforeShow = function(message) {
-		var processed = message.replace(/(^|[^\/])(www\.[^\.]+\.[\S]+(\b|$))/gi, '$1http://$2');
-		processed = processed.replace(/\b(https?:\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig, replaceCallback);
-		
-		return processed;
+	self.handleBeforeShow = function(e, args) {
+		var processed = args.message.replace(/(^|[^\/])(www\.[^\.]+\.[\S]+(\b|$))/gi, '$1http://$2');
+		args.message = processed.replace(/\>(https?:\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])\</ig, self.replaceCallback);
 	};
-	
+
 	/** Function: handleOnShow
 	 * Each time a message gets displayed, this method checks for possible
 	 * image loaders (created by buildImageLoaderSource).
@@ -90,41 +88,26 @@ CandyShop.InlineImages = (function(self, Candy, $) {
 	 * Parameters:
 	 *   (Array) args
 	 */
-	var handleOnShow = function(args) {
+	self.handleAfterShow = function(e, args) {
 		$('.inlineimages-loader').each(function(index, element) {
-			$(element).removeClass('inlineimages-loader');
+			$(element).removeClass('inlineimages-loader').parent().addClass('inlineimages-link');
 			var url = $(element).attr('longdesc');
 			var imageLoader = new Image();
-			
+
 			$(imageLoader).load(function() {
 				var origWidth = this.width;
 				var origHeight = this.height;
-				var ratio = Math.min(_maxImageSize / origWidth, _maxImageSize / origHeight);
+				var ratio = Math.min(_options.maxImageSize / origWidth, _options.maxImageSize / origHeight);
 				var width = Math.round(ratio * origWidth);
 				var height = Math.round(ratio * origHeight);
-				
-				$(element).replaceWith(buildImageSource(url, width, height))
+
+				$(element).replaceWith(self.buildImageSource(url, width, height))
 			});
-			
+
 			imageLoader.src = url;
 		});
-	}
-	
-	/** Function: linkify
-	 * Is used to overwrite the original Candy.Util.Parser.linkify.
-	 * This implementation prevents the parsing of URL's by the Candy core.
-	 * inline-images handles this on itself by handleBeforeShow.
-	 *
-	 * Parameters:
-	 *   (String) text - text to process
-	 *
-	 * Returns:
-	 *   (String)
-	 */
-	var linkify = function(text) {
-		return text;
-	}
-	
+	};
+
 	/** Function: replaceCallback
 	 * This callback handles matches from the URL regex.
 	 * If the callback detects an image URL, it returns an image with a loading
@@ -136,60 +119,20 @@ CandyShop.InlineImages = (function(self, Candy, $) {
 	 * Returns:
 	 *   (String)
 	 */
-	var replaceCallback = function(match) {
-		var result = match;
+	self.replaceCallback = function(match) {
+		var result = match.replace(/^>/, '').replace(/<$/, '');
 
-		var dotPosition = match.lastIndexOf(".");
+		var dotPosition = result.lastIndexOf(".");
 		if(dotPosition > -1) {
-			if(_fileExtensions.indexOf(match.substr(dotPosition+1)) != -1) {
-				result = buildImageLoaderSource(match);
-			} else {
-				result = buildLinkSource(match);
+			if(_options.fileExtensions.indexOf(result.substr(dotPosition+1)) != -1) {
+				result = self.buildImageLoaderSource(match);
 			}
 		}
-		
+
+		result = '>' + result + '<';
+
 		return result;
-	}
-	
-	/** Function: buildImageLoaderSource
-	 * Returns a loader indicator. The handleOnShow method fullfills afterwards
-	 * the effective image loading.
-	 *
-	 * Parameters:
-	 *   (String) url - image url
-	 * 
-	 * Returns:
-	 *   (String)
-	 */
-	var buildImageLoaderSource = function(url) {
-		return '<img class="inlineimages-loader" longdesc="' + url + '" src="candy-plugins/inline-images/spinner.gif" />'
-	}
-	
-	/** Function: buildImageSource
-	 * Returns HTML source to show a URL as an image.
-	 *
-	 * Parameters:
-	 *   (String) url - image url
-	 * 
-	 * Returns:
-	 *   (String)
-	 */
-	var buildImageSource = function(url, width, height) {
-		return '<a href="' + url + '" target="_blank" class="inlineimages-link"><img src="' + url + '" width="' + width + '" height="' + height + '"/></a>';
-	}
-	
-	/** Function: buildLinkSource
-	 * Returns HTML source to show a URL as a link.
-	 *
-	 * Parameters:
-	 *   (String) url - url
-	 * 
-	 * Returns:
-	 *   (String)
-	 */
-	var buildLinkSource = function(url) {
-		return '<a href="' + url + '" target="_blank">' + url + '</a>';
-	}
+	};
 
 	return self;
 }(CandyShop.InlineImages || {}, Candy, jQuery));

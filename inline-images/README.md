@@ -1,24 +1,35 @@
-# Inline Images
+# Inline images plugin
 If a user posts a URL to an image, that image gets rendered directly inside of Candy.
 
-![Inline Images](/amiadogroup/candy-plugins/raw/master/inline-images/screenshot.png)
+![Inline Images](/candy-chat/candy-plugins/raw/master/inline-images/screenshot.png)
 
 ## Usage
 Include the JavaScript and CSS files:
 
 ```HTML
-<script type="text/javascript" src="candyshop/inline-images/candy.js"></script>
-<link rel="stylesheet" type="text/css" href="candyshop/inline-images/candy.css" />
+<script type="text/javascript" src="path_to_plugins/inlineimages/candy.js"></script>
+<link rel="stylesheet" type="text/css" href="path_to_plugins/inlineimages/candy.css" />
 ```
 
-To enable the Inline Images plugin, just add one of the ´init´ methods to your bootstrap:
+Call its `init()` method after Candy has been initialized:
 
 ```JavaScript
-// init with default settings:
+Candy.init('/http-bind/');
+
 CandyShop.InlineImages.init();
 
-// customized initialization:
-CandyShop.InlineImages.initWithFileExtensions(['png','jpg']);  // only recognize PNG and JPG files as image
-CandyShop.InlineImages.initWithMaxImageSize(150);  // resize images to a maximum edge size of 150px
-CandyShop.InlineImages.initWithFileExtensionsAndMaxImageSize(['png','jpg'], 150);  // combination of the above examples
+Candy.Core.connect();
+```
+
+## Configuration options
+fileExtensions - Array - File extensions to turn into images
+maxImageSize - Integer - The max height or width for an image
+
+## Example configurations
+```JavaScript
+// Only use png and gif, and let them be 150px
+CandyShop.InlineImages.init({
+    fileExtensions: ['png', 'gif'],
+    maxImageSize: 150
+});
 ```
